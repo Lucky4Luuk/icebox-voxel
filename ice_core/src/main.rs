@@ -54,6 +54,10 @@ fn main() {
     let mut frame_time = Instant::now();
 
     event_loop.run(move |raw_event, _, control_flow| {
+        ui_manager.platform.handle_event(&raw_event);
+        if ui_manager.platform.captures_event(&raw_event) {
+            return;
+        }
         match raw_event {
             Event::MainEventsCleared => {
                 ui_manager.platform.update_time(start_time.elapsed().as_secs_f64());
@@ -83,11 +87,7 @@ fn main() {
             },
             Event::WindowEvent { ref event, ..} => match event {
                 WindowEvent::CloseRequested => *control_flow = ControlFlow::Exit,
-                _ => {
-                    if ui_manager.platform.captures_event(&raw_event) {
-                        ui_manager.platform.handle_event(&raw_event);
-                    }
-                },
+                _ => {},
             },
             _ => {},
         }
