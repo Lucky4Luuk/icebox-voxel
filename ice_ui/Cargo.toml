@@ -1,0 +1,16 @@
+[package]
+name = "ice_ui"
+version = "0.1.0"
+authors = ["Luuk van Oijen <lazyluuk.channel@gmail.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+winit = "0.24.0"
+
+vulkano = "0.22.0"
+
+egui = "0.11.0"
+egui_winit_platform = "0.6.0"
+egui_vulkano = "0.1.0"

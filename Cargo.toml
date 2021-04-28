@@ -1,0 +1,2 @@
+[workspace]
+members = ["ice_core", "ice_vox_mem", "ice_render", "ice_ui"]
