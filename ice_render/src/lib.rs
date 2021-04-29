@@ -64,7 +64,6 @@ fn window_size_dependent_setup(
 }
 
 pub struct VkRenderer {
-    //For gpu cleanup
     previous_frame_end: Option<Box<dyn GpuFuture>>,
 
     //Swapchain
@@ -140,6 +139,26 @@ impl VkRenderer {
 
     pub fn render(&mut self, device: &Arc<Device>, queue: &Arc<Queue>, surface: &Arc<Surface<Window>>, ui_manager: &mut ice_ui::IceUI, delta_s: f32)
     {
+        //This function polls various fences in order to determine what the GPU has already
+        //processed, and frees up any resources that are no longer needed
+        // self.previous_frame_end.as_mut().unwrap().cleanup_finished();
+        if let &mut Some(ref mut prev_frame_end) = &mut self.previous_frame_end {
+            prev_frame_end.cleanup_finished();
+        } else {
+            panic!("Something went wrong!");
+        }
+
+        if self.recreate_swapchain {
+            let dimensions: [u32; 2] = surface.window().inner_size().into();
+            let (swapchain, images) = self.swapchain.recreate_with_dimensions(dimensions).expect("Failed to recreate swapchain!");
+            self.swapchain = swapchain;
+            self.swapchain_images = images;
+            self.recreate_swapchain = false;
+
+            self.framebuffers = window_size_dependent_setup(&self.swapchain_images[..], self.render_pass.clone(), &mut self.dynamic_state);
+            trace!("Swapchain recreated!");
+        }
+
         // Before we can draw on the output, we have to *acquire* an image from the swapchain. If
         // no image is available (which happens if you submit draw commands too quickly), then the
         // function will block.
@@ -168,7 +187,7 @@ impl VkRenderer {
 
         let clear_values = vec![[0.8, 0.15, 0.9, 1.0].into()];
 
-        let mut main_cmd_builder = AutoCommandBufferBuilder::new(device.clone(), queue.family()).unwrap();
+        let mut main_cmd_builder = AutoCommandBufferBuilder::primary_one_time_submit(device.clone(), queue.family()).unwrap();
         main_cmd_builder.begin_render_pass(self.framebuffers[image_num].clone(), SubpassContents::Inline, clear_values).unwrap();
 
         let (_output, clipped_shapes) = ui_manager.render(surface.window(), delta_s);
@@ -198,29 +217,9 @@ impl VkRenderer {
                 self.previous_frame_end = Some(vulkano::sync::now(device.clone()).boxed());
             }
             Err(e) => {
-                println!("Failed to flush future: {:?}", e);
+                error!("Failed to flush future: {:?}", e);
                 self.previous_frame_end = Some(vulkano::sync::now(device.clone()).boxed());
             }
-        }
-    }
-
-    /// Finish rendering a frame.
-    /// Without this, the rendering still technically works, but it won't recreate the swapchain for instance.
-    //TODO: Renew framebuffers
-    pub fn prepare_frame(&mut self, device: &Arc<Device>, queue: &Arc<Queue>, physical: &PhysicalDevice, surface: &Arc<Surface<Window>>) {
-        //This function polls various fences in order to determine what the GPU has already
-        //processed, and frees up any resources that are no longer needed
-        self.previous_frame_end.as_mut().unwrap().cleanup_finished();
-
-        if self.recreate_swapchain {
-            let dimensions: [u32; 2] = surface.window().inner_size().into();
-            let (swapchain, images) = self.swapchain.recreate_with_dimensions(dimensions).expect("Failed to recreate swapchain!");
-            self.swapchain = swapchain;
-            self.swapchain_images = images;
-            self.recreate_swapchain = false;
-
-            self.framebuffers = window_size_dependent_setup(&self.swapchain_images[..], self.render_pass.clone(), &mut self.dynamic_state);
-            trace!("Swapchain recreated!");
         }
     }
 }

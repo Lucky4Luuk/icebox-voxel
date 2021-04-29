@@ -30,6 +30,13 @@ impl IceUI {
         let mut style = egui::Style::default();
         style.visuals.window_corner_radius = 0.0;
         style.visuals.window_shadow.extrusion = 0.5;
+        let mut text_col = style.visuals.text_color();
+        println!("text_col: {:?}", text_col);
+        text_col[0] += 55;
+        text_col[1] += 55;
+        text_col[2] += 55;
+        println!("text_col: {:?}", text_col);
+        style.visuals.override_text_color = Some(text_col);
 
         platform.context().set_style(style);
 
@@ -42,13 +49,12 @@ impl IceUI {
     pub fn render(&mut self, window: &winit::window::Window, delta_s: f32) -> (egui::Output, Vec<egui::paint::ClippedShape>) {
         self.platform.begin_frame();
 
-        egui::Window::new("Hello egui!")
+        egui::Window::new("Debug")
             .scroll(true)
             .show(&self.platform.context(), |ui| {
-                ui.label("Test label!");
-                ui.hyperlink("https://github.com/lucky4luuk/icebox-voxel");
+                ui.label(format!("FPS: {} / {:.2} ms", 1.0 / delta_s, delta_s * 1000.0));
                 ui.separator();
-                ui.label(format!("FPS: {}", 1.0 / delta_s));
+                ui.hyperlink("https://github.com/lucky4luuk/icebox-voxel");
             });
 
         self.platform.end_frame()

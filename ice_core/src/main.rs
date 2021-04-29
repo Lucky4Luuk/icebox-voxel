@@ -72,15 +72,8 @@ fn main() {
                 //game.update(delta_s);
 
                 //Rendering
+                //Prepare frame
                 {
-                    let physical = get_physical_device(&instance);
-                    renderer.prepare_frame(&device, &queue, &physical, &surface);
-                }
-
-                //Render UI
-                {
-                    // let egui_data = ui_manager.render(&surface.window());
-
                     //Rendering
                     renderer.render(&device, &queue, &surface, &mut ui_manager, delta_s);
                 }
